@@ -3,6 +3,7 @@ package io.adumun.platform.spring.security;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 public final class AdumunStatelessBearerSecurity {
     private AdumunStatelessBearerSecurity() {}
@@ -10,9 +11,11 @@ public final class AdumunStatelessBearerSecurity {
     public static HttpSecurity configure(
             HttpSecurity http,
             AdumunAuthenticationEntryPoint authenticationEntryPoint,
-            AdumunAccessDeniedHandler accessDeniedHandler) throws Exception {
+            AdumunAccessDeniedHandler accessDeniedHandler,
+            CorsConfigurationSource corsConfigurationSource) throws Exception {
         return http
                 .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(authenticationEntryPoint)
