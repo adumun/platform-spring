@@ -1,10 +1,12 @@
 .PHONY: validate test package
 
+MVNW := ./mvnw
+
 validate:
-	mvn -B clean verify
+	$(MVNW) -B clean verify
 
 test:
-	mvn -B test
+	$(MVNW) -B test
 
 package:
-	mvn -B -DskipTests package
+	$(MVNW) -B -DskipTests package
