@@ -22,6 +22,7 @@
   <modules>
     <module>adumun-spring-rest</module>
     <module>adumun-spring-test</module>
+    <module>adumun-spring-security</module>
     <module>examples/reference-consumer</module>
   </modules>
 </project>
