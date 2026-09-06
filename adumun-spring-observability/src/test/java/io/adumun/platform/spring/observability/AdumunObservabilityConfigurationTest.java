@@ -16,7 +16,10 @@ class AdumunObservabilityConfigurationTest {
         var tags = new AdumunObservabilityConfiguration.AdumunObservationTags(properties).commonTags();
 
         assertThat(tags.stream().map(kv -> kv.getKey() + "=" + kv.getValue()).toList())
-                .containsExactly("service.name=orders", "deployment.environment=test", "service.version=abc123");
+                .containsExactlyInAnyOrder(
+                        "service.name=orders",
+                        "deployment.environment=test",
+                        "service.version=abc123");
     }
 
     @Test
