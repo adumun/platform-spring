@@ -1,0 +1,11 @@
+adumun:
+  security:
+    public-paths:
+      - /live
+      - /ready
+      - /demo
+      - /demo/failure
+      - /demo/internal
+      - /security/public
+    cors:
+      enabled: false
