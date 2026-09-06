@@ -15,7 +15,10 @@ Reusable Spring implementation modules for ADÜMÜN platform standards.
 
 - Java 25 LTS
 - Spring Boot 4.1.1
-- Maven
+- Maven Wrapper 3.3.4
+- Apache Maven 3.9.11 (wrapper-managed)
+
+A global Maven installation is not required. Repository validation must use the checked-in Maven Wrapper.
 
 ## Validation
 
@@ -26,7 +29,14 @@ make validate
 Equivalent command:
 
 ```bash
-mvn -B clean verify
+./mvnw -B clean verify
+```
+
+Useful direct commands:
+
+```bash
+./mvnw -version
+./mvnw -B test
 ```
 
 The reference consumer under `examples/reference-consumer` proves the modules can be wired without GradeOps, KeyGo or other product-domain assumptions.
