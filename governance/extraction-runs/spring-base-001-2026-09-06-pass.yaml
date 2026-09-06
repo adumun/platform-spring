@@ -1,0 +1,65 @@
+schema_version: 1
+record_id: SPRING-BASE-001-2026-09-06-PASS
+status: PASS
+slice: SPRING-BASE-001
+validated_at: 2026-09-06T07:48:28-03:00
+repository: adumun/platform-spring
+branch: feat/spring-test-service-baseline
+evaluated_revision: 4d7bfdf32716e51b2e9c40427086083218598dc0
+validation:
+  command: make validate
+  result: BUILD_SUCCESS
+  reactor:
+    platform-spring: SUCCESS
+    adumun-spring-rest: SUCCESS
+    adumun-spring-test: SUCCESS
+    platform-spring-reference-consumer: SUCCESS
+  tests:
+    adumun-spring-rest:
+      total: 3
+      failures: 0
+      errors: 0
+      skipped: 0
+    adumun-spring-test:
+      total: 1
+      failures: 0
+      errors: 0
+      skipped: 0
+    platform-spring-reference-consumer:
+      total: 4
+      failures: 0
+      errors: 0
+      skipped: 0
+environment:
+  os: WSL2 Linux 6.6.87.2-microsoft-standard-WSL2
+  java:
+    distribution: Eclipse Temurin
+    version: 25.0.4
+    sdkman_identifier: 25.0.4-tem
+  maven:
+    wrapper: true
+    version: 3.9.11
+  spring_boot: 4.1.1
+  docker:
+    runtime: Docker Desktop
+    server_version: 29.7.2
+  testcontainers: 2.0.5
+validated_capabilities:
+  - deterministic_maven_wrapper_build
+  - java_25_compilation
+  - docker_daemon_preflight
+  - spring_mvc_reference_consumer
+  - request_id_propagation
+  - correlation_id_propagation
+  - standard_success_error_envelopes
+  - centralized_exception_mapping
+  - liveness_readiness_routes
+  - postgres_testcontainers_support
+  - internal_error_detail_non_leakage
+non_claims:
+  - no Spring Security baseline claim
+  - no observability implementation claim
+  - no resilience implementation claim
+  - no reactive/WebFlux baseline claim
+source_evidence:
+  human_validation_output: user-provided make validate output in ChatGPT session
