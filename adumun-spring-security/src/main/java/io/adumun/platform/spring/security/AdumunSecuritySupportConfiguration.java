@@ -1,6 +1,7 @@
 package io.adumun.platform.spring.security;
 
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +35,7 @@ public class AdumunSecuritySupportConfiguration {
             HttpSecurity http,
             AdumunAuthenticationEntryPoint authenticationEntryPoint,
             AdumunAccessDeniedHandler accessDeniedHandler,
-            CorsConfigurationSource corsConfigurationSource,
+            @Qualifier("adumunCorsConfigurationSource") CorsConfigurationSource corsConfigurationSource,
             AdumunSecurityProperties properties,
             ObjectProvider<AdumunAuthorizationRules> rules) throws Exception {
         AdumunStatelessBearerSecurity.configure(
