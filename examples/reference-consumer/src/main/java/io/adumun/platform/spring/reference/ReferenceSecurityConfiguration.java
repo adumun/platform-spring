@@ -1,18 +1,15 @@
 package io.adumun.platform.spring.reference;
 
 import io.adumun.platform.spring.security.AdumunAuthorizationRules;
-import io.adumun.platform.spring.security.AdumunSecuritySupportConfiguration;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 
 @Configuration(proxyBeanMethods = false)
-@Import(AdumunSecuritySupportConfiguration.class)
 class ReferenceSecurityConfiguration {
     @Bean
     AdumunAuthorizationRules referenceAuthorizationRules() {
