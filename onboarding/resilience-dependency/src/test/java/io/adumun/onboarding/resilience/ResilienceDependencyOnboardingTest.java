@@ -3,7 +3,7 @@ package io.adumun.onboarding.resilience;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.adumun.platform.spring.resilience.AdumunResilienceConfiguration.AdumunResilienceRegistry;
+import io.adumun.platform.spring.resilience.AdumunResilienceRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.builder.SpringApplicationBuilder;
