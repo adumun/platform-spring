@@ -150,6 +150,61 @@ Successful compact validation writes the complete log to `.validation/validate.l
 
 The reference consumer under `examples/reference-consumer` is the in-repository executable integration contract. It proves that shared modules compose without product-domain assumptions, but it is not by itself sufficient evidence of external adoption.
 
+### Dependency and supply-chain health
+
+`STD-ENG-DEP-001` is implemented as two explicit gates so deterministic structural checks are not conflated with time-sensitive external intelligence.
+
+Run the structural gate with:
+
+```bash
+make dependency-health-local
+```
+
+It performs:
+
+- compilation with `-Xlint:deprecation` and fails when repository code uses deprecated APIs;
+- the complete Maven dependency tree including direct and transitive dependencies;
+- effective POM materialization for the root and every reactor module, preserving parent/BOM/dependency-management evidence;
+- build-plugin resolution including transitive plugin dependencies;
+- blocking Maven Enforcer `dependencyConvergence` verification;
+- advisory `requireUpperBoundDeps` evidence while Spring Boot BOM behavior is being baselined;
+- an aggregate CycloneDX SBOM from the resolved application graph;
+- machine-readable local policy analysis where Python 3 is available.
+
+Run the enriched gate with:
+
+```bash
+make dependency-health
+```
+
+The enriched gate includes the structural work and additionally:
+
+- reports available dependency and build-plugin updates without auto-upgrading anything;
+- queries OSV for both application dependencies and build-plugin dependencies;
+- checks governed runtime/framework lifecycle cycles through `endoflife.date`;
+- records license metadata available in CycloneDX;
+- validates exception ownership/expiry;
+- refuses to claim health when an external intelligence source is unavailable.
+
+Outputs are written under `.validation/dependency-health/`, including:
+
+- `dependency-tree.txt`;
+- `plugin-dependencies.txt`;
+- `effective-pom/*.xml`;
+- `platform-spring-sbom.json`;
+- `osv-findings.json` in full mode;
+- `lifecycle-findings.json` in full mode;
+- `report.json` as the machine-readable final report;
+- per-stage diagnostic logs.
+
+Use `VERBOSE=1` to stream underlying tooling output:
+
+```bash
+make dependency-health VERBOSE=1
+```
+
+The governed policy lives at `governance/dependency-health-policy.json`. Known vulnerabilities and unsupported/EOL runtime baselines block the full gate unless a time-bounded governed exception exists. Missing license metadata is currently a warning because no organization-wide license denylist has yet been canonically approved; the mechanism does not invent legal policy.
+
 ### Isolated consumer onboarding
 
 Consumer-boundary validation runs standalone Spring Boot projects that are deliberately outside the root Maven reactor:
