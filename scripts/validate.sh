@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -u
 set -o pipefail
+shopt -s lastpipe
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
@@ -51,6 +52,7 @@ set +e
     if [[ -n "$reported_total" && "$reported_total" -gt 0 ]]; then
       total=$reported_total
     fi
+    last_label=$label
     progress_render "$current" "$total" "$label" RUNNING
   fi
 done
@@ -73,7 +75,7 @@ if (( status == 0 )); then
   exit 0
 fi
 
-progress_render "$current" "$total" "Maven reactor" FAIL
+progress_render "$current" "$total" "$last_label" FAIL
 progress_finish_line
 echo "[validate] FAIL — $(progress_duration "$elapsed")"
 echo "[validate] Diagnostic:"
