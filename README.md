@@ -2,41 +2,116 @@
 
 Reusable Spring implementation modules for ADÜMÜN platform standards.
 
-## Current slice
-
-`SPRING-BASE-001` materializes two modules only:
-
-- `adumun-spring-rest` — Spring MVC integration for request/correlation context, shared envelopes, centralized error handling and liveness/readiness semantics.
-- `adumun-spring-test` — reusable Spring testing support for PostgreSQL Testcontainers and Flyway migration verification.
-
-`adumun-spring-security` and observability are intentionally outside this slice.
-
 ## Runtime baseline
 
 - Java 25 LTS
 - Spring Boot 4.1.1
+- Spring MVC / Servlet as the default web execution model
 - Maven Wrapper 3.3.4
 - Apache Maven 3.9.11 (wrapper-managed)
 
 A global Maven installation is not required. Repository validation must use the checked-in Maven Wrapper.
 
+## Modules
+
+- `adumun-spring-rest` — request/correlation context, shared response/error envelopes, centralized error handling, liveness/readiness, Servlet integration.
+- `adumun-spring-test` — PostgreSQL Testcontainers and Flyway verification support.
+- `adumun-spring-security` — stateless bearer security, standard 401/403 handling, declarative CORS, public-path configuration and narrow authorization extension points.
+- `adumun-spring-observability` — operational identity, Micrometer Observation/Tracing integration, OpenTelemetry bridge and request/correlation logging context.
+- `adumun-spring-resilience` — named dependency policies for retry, exponential backoff/jitter, circuit breaker, bulkhead and timeout using Resilience4j Boot 4.
+
+## Consumer experience
+
+The normal adoption model is convention over configuration:
+
+1. add the required ADÜMÜN module dependency;
+2. configure variable values under `adumun.*`;
+3. provide only product-specific extension points when necessary.
+
+Consumers SHOULD NOT import ADÜMÜN infrastructure configuration classes or recreate Spring framework plumbing for normal cases. REST, security, observability and resilience infrastructure are registered through Spring Boot auto-configuration.
+
+A consumer application can therefore remain a normal Spring Boot application:
+
+```java
+@SpringBootApplication
+public class Application {
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+}
+```
+
+### Security example
+
+Typical variable configuration:
+
+```yaml
+adumun:
+  security:
+    public-paths:
+      - /live
+      - /ready
+    cors:
+      enabled: false
+```
+
+Application-specific authorization remains a narrow extension point:
+
+```java
+@Bean
+AdumunAuthorizationRules authorizationRules() {
+    return authorize -> authorize
+        .requestMatchers("/admin/**")
+        .hasAuthority("SCOPE_admin");
+}
+```
+
+The authentication provider / `JwtDecoder` remains consumer- or adapter-provided. Shared provider adapters may supply that bean so consuming applications do not implement provider mechanics themselves.
+
+### Observability example
+
+```yaml
+adumun:
+  observability:
+    service-name: orders
+    environment: production
+    build-version: ${BUILD_VERSION:unknown}
+    tracing:
+      export-enabled: false
+      sampling-probability: 0.1
+```
+
+### Resilience example
+
+```yaml
+adumun:
+  resilience:
+    dependencies:
+      catalog:
+        idempotent: true
+        retry:
+          enabled: true
+          max-attempts: 3
+        circuit-breaker:
+          enabled: true
+```
+
+Retry, circuit breaker, bulkhead, timeout and trace export remain disabled unless explicitly configured. Non-idempotent work cannot enable retry without an explicit idempotency declaration.
+
 ## Validation
+
+Default validation is intentionally concise and reports real reactor progress:
 
 ```bash
 make validate
 ```
 
-Equivalent command:
+Full underlying Maven/Spring/Testcontainers diagnostics are available with:
 
 ```bash
-./mvnw -B clean verify
+make validate VERBOSE=1
 ```
 
-Useful direct commands:
+Successful compact validation writes the complete log to `.validation/validate.log`.
 
-```bash
-./mvnw -version
-./mvnw -B test
-```
-
-The reference consumer under `examples/reference-consumer` proves the modules can be wired without GradeOps, KeyGo or other product-domain assumptions.
+The reference consumer under `examples/reference-consumer` is the executable consumer-experience contract. It must prove that shared modules work without product-domain assumptions and without manual imports of ADÜMÜN infrastructure configuration.
