@@ -1,0 +1,30 @@
+schema_version: 1
+record_id: spring-idp-001-2026-09-07-pass
+slice_id: SPRING-IDP-001
+result: PASS
+evaluated_revision: fc53faa637fc8358c5cb423531e8f8abb9dfef55
+branch: feat/spring-security-oidc-adapter
+command: make validate
+runtime:
+  java: 25
+  spring_boot: 4.1.1
+  web_stack: SPRING_MVC_SERVLET
+validation:
+  reactor_modules: 8
+  generic_oidc_adapter_compile: PASS
+  generic_oidc_adapter_tests: PASS
+  reference_consumer: PASS
+  overall: PASS
+  elapsed_seconds: 16
+  warning_lines: 1
+identity_adapter_contract:
+  provider_neutral_core_preserved: true
+  generic_oidc_adapter_auto_configured: true
+  issuer_validation: true
+  audience_validation: true
+  consumer_supplied_jwt_decoder_backoff: true
+  manual_adumun_import_required: false
+notes:
+  - User reported final local make validate as PASS on the exact evaluated revision.
+  - One warning line was reported by the compact validator; it is non-blocking and remains available in .validation/validate.log.
+  - This evidence certifies the evaluated revision, not this later evidence commit.
