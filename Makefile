@@ -1,4 +1,4 @@
-.PHONY: deps validate onboarding test package
+.PHONY: deps validate onboarding dependency-health-local dependency-health test package
 
 MVNW := ./mvnw
 VALIDATION_DIR := .validation
@@ -19,6 +19,12 @@ validate: deps
 
 onboarding:
 	@VERBOSE=$(VERBOSE) PUBLISHED=$(PUBLISHED) VERSION=$(VERSION) MVNW=$(MVNW) VALIDATION_DIR=$(VALIDATION_DIR) bash scripts/onboarding.sh
+
+dependency-health-local:
+	@VERBOSE=$(VERBOSE) MVNW=$(MVNW) VALIDATION_DIR=$(VALIDATION_DIR) bash scripts/dependency-health.sh local
+
+dependency-health:
+	@VERBOSE=$(VERBOSE) MVNW=$(MVNW) VALIDATION_DIR=$(VALIDATION_DIR) bash scripts/dependency-health.sh full
 
 test: deps
 	@if [ "$(VERBOSE)" = "1" ]; then \
