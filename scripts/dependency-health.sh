@@ -29,16 +29,18 @@ java_major=$(java -version 2>&1 | sed -n '1s/.*version "\([0-9][0-9]*\).*/\1/p')
 if [[ "$MODE" == "full" ]]; then
   command -v "$PYTHON" >/dev/null 2>&1 || { echo "[dependency-health] FAIL — python3 is required for external-intelligence analysis"; exit 1; }
 fi
+
+rm -rf "$REPORT_DIR"
+mkdir -p "$REPORT_DIR/effective-pom"
 if command -v "$PYTHON" >/dev/null 2>&1; then
-  if ! "$PYTHON" -m unittest -q scripts/test_dependency_health.py; then
+  if ! "$PYTHON" -m unittest -q scripts/test_dependency_health.py >"$REPORT_DIR/analyzer-self-test.log" 2>&1; then
     echo "[dependency-health] FAIL — analyzer self-test"
+    cat "$REPORT_DIR/analyzer-self-test.log"
     exit 1
   fi
   echo "[dependency-health] Analyzer self-test — PASS"
 fi
 
-rm -rf "$REPORT_DIR"
-mkdir -p "$REPORT_DIR/effective-pom"
 started_at=$(date +%s)
 if [[ "$MODE" == "full" ]]; then total=10; else total=7; fi
 current=0
@@ -63,7 +65,13 @@ run_advisory_stage() {
   progress_render "$current" "$total" "$label" PASS; printf '0\n' >"$log.status"
 }
 
-run_stage "Deprecated API usage" "$REPORT_DIR/deprecations.log" "$MVNW" -B -DskipTests clean compile || exit $?
+check_dependency_and_parent_updates() {
+  "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-dependency-updates -DprocessDependencyManagement=true -DallowSnapshots=false &&
+  "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-parent-updates -DallowSnapshots=false
+}
+
+# Compile production and test source without executing tests so deprecated APIs anywhere in repository code are visible.
+run_stage "Deprecated API usage" "$REPORT_DIR/deprecations.log" "$MVNW" -B -DskipTests clean test-compile || exit $?
 if grep -Eq '\[deprecation\]|deprecated and marked for removal|has been deprecated' "$REPORT_DIR/deprecations.log"; then
   progress_finish_line; echo "[dependency-health] FAIL — deprecated API usage detected"
   grep -E '\[deprecation\]|deprecated and marked for removal|has been deprecated' "$REPORT_DIR/deprecations.log" | tail -40 || true
@@ -86,13 +94,14 @@ progress_render "$current" "$total" "Effective POMs" PASS
 run_stage "Plugin dependency graph" "$REPORT_DIR/plugin-dependencies.txt" "$MVNW" -B org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve-plugins -DexcludeTransitive=false -DexcludeReactor=true || exit $?
 run_stage "Dependency convergence" "$REPORT_DIR/convergence.log" "$MVNW" -B org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce -Drules=dependencyConvergence -Denforcer.fail=true || exit $?
 run_advisory_stage "Upper-bound drift" "$REPORT_DIR/upper-bound.log" "$MVNW" -B org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce -Drules=requireUpperBoundDeps -Denforcer.fail=true
-run_stage "CycloneDX SBOM" "$REPORT_DIR/sbom.log" "$MVNW" -B org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom -DoutputFormat=json -DoutputName=platform-spring-sbom -DoutputDirectory="$REPORT_DIR" || exit $?
+ABS_REPORT_DIR=$(cd "$REPORT_DIR" && pwd)
+run_stage "CycloneDX SBOM" "$REPORT_DIR/sbom.log" "$MVNW" -B org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom -DoutputFormat=json -DoutputName=platform-spring-sbom -DoutputDirectory="$ABS_REPORT_DIR" || exit $?
 
 SBOM="$REPORT_DIR/platform-spring-sbom.json"
 [[ -s "$SBOM" ]] || { progress_finish_line; echo "[dependency-health] FAIL — CycloneDX SBOM was not produced at $SBOM"; exit 1; }
 
 if [[ "$MODE" == "full" ]]; then
-  run_advisory_stage "Dependency updates" "$REPORT_DIR/dependency-updates.log" "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-dependency-updates -DprocessDependencyManagement=true -DallowSnapshots=false
+  run_advisory_stage "Dependency/parent updates" "$REPORT_DIR/dependency-updates.log" check_dependency_and_parent_updates
   run_advisory_stage "Plugin updates" "$REPORT_DIR/plugin-updates.log" "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-plugin-updates -DallowSnapshots=false
   current=$((current + 1)); progress_render "$current" "$total" "External intelligence" RUNNING
   intel=("$PYTHON" scripts/dependency_health.py external --sbom "$SBOM" --dependency-tree "$REPORT_DIR/dependency-tree.txt" --plugin-dependencies "$REPORT_DIR/plugin-dependencies.txt" --policy "$POLICY_FILE" --report-dir "$REPORT_DIR")
