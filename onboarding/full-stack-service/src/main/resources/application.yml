@@ -1,0 +1,36 @@
+adumun:
+  security:
+    public-paths:
+      - /public
+    cors:
+      enabled: false
+    identity:
+      oidc:
+        enabled: true
+        issuer-uri: https://issuer.example.test
+        jwk-set-uri: http://127.0.0.1:65535/jwks
+        audiences:
+          - onboarding-api
+  observability:
+    service-name: onboarding-full-stack
+    environment: test
+    build-version: 0.0.1
+    tracing:
+      export-enabled: false
+      sampling-probability: 0.1
+  resilience:
+    dependencies:
+      catalog:
+        idempotent: true
+        retry:
+          enabled: true
+          max-attempts: 2
+          initial-backoff: 25ms
+          multiplier: 2.0
+          jitter: 0.1
+        circuit-breaker:
+          enabled: true
+          failure-rate-threshold: 50
+          minimum-number-of-calls: 2
+          sliding-window-size: 4
+          open-state-duration: 250ms
