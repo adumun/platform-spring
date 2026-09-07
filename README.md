@@ -132,7 +132,9 @@ Retry, circuit breaker, bulkhead, timeout and trace export remain disabled unles
 
 ## Validation
 
-Default validation is intentionally concise and reports real reactor progress:
+### Implementation reactor
+
+Default implementation validation is intentionally concise and reports real reactor progress:
 
 ```bash
 make validate
@@ -146,4 +148,37 @@ make validate VERBOSE=1
 
 Successful compact validation writes the complete log to `.validation/validate.log`.
 
-The reference consumer under `examples/reference-consumer` is the executable consumer-experience contract. It must prove that shared modules work without product-domain assumptions and without manual imports of ADÜMÜN infrastructure configuration.
+The reference consumer under `examples/reference-consumer` is the in-repository executable integration contract. It proves that shared modules compose without product-domain assumptions, but it is not by itself sufficient evidence of external adoption.
+
+### Isolated consumer onboarding
+
+Consumer-boundary validation runs standalone Spring Boot projects that are deliberately outside the root Maven reactor:
+
+```bash
+make onboarding
+```
+
+The harness installs the exact candidate ADÜMÜN artifacts into an isolated Maven repository under `.validation/onboarding-m2`, then starts a new Maven build for each onboarding project. The onboarding projects do not inherit the `platform-spring` parent, do not compile against source directories and do not manually import ADÜMÜN infrastructure configuration.
+
+Current onboarding paths:
+
+- REST minimal;
+- Security with consumer-owned custom `JwtDecoder`;
+- Generic OIDC/JWT Security;
+- Observability minimal;
+- named dependency Resilience;
+- full-stack REST + Security/OIDC + Observability + Resilience composition.
+
+Logs are written per case under `.validation/onboarding/`. Full output is available with:
+
+```bash
+make onboarding VERBOSE=1
+```
+
+Once ADÜMÜN Maven artifacts are remotely published, the same standalone projects support the stronger distribution gate:
+
+```bash
+make onboarding PUBLISHED=1 VERSION=<published-version>
+```
+
+See `onboarding/README.md` for the isolation contract and case matrix.
