@@ -94,10 +94,8 @@ run_advisory_stage() {
   return 0
 }
 
-# 1. Compile all main sources with -Xlint:deprecation configured in the root POM.
 run_stage "Deprecated API usage" "$REPORT_DIR/deprecations.log" \
   "$MVNW" -B -DskipTests clean compile || exit $?
-
 if grep -Eq '\[deprecation\]|deprecated and marked for removal|has been deprecated' "$REPORT_DIR/deprecations.log"; then
   progress_finish_line
   echo "[dependency-health] FAIL — deprecated API usage detected"
@@ -106,22 +104,15 @@ if grep -Eq '\[deprecation\]|deprecated and marked for removal|has been deprecat
   exit 1
 fi
 
-# 2. Capture the complete resolved reactor graph. Maven includes direct and transitive paths.
 run_stage "Resolved dependency graph" "$REPORT_DIR/dependency-tree.txt" \
   "$MVNW" -B org.apache.maven.plugins:maven-dependency-plugin:3.11.0:tree -Dverbose || exit $?
 
-# 3. Materialize effective POMs for root and every declared module so parent/BOM/plugin inheritance is inspectable.
 current=$((current + 1))
 progress_render "$current" "$total" "Effective POMs" RUNNING
 EFFECTIVE_LOG="$REPORT_DIR/effective-pom.log"
 : >"$EFFECTIVE_LOG"
 abs_effective_dir=$(cd "$REPORT_DIR/effective-pom" && pwd)
-if [[ "$VERBOSE" == "1" ]]; then
-  effective_quiet=()
-else
-  effective_quiet=(-q)
-fi
-
+if [[ "$VERBOSE" == "1" ]]; then effective_quiet=(); else effective_quiet=(-q); fi
 write_effective_pom() {
   local pom=$1
   local name=$2
@@ -129,7 +120,6 @@ write_effective_pom() {
     org.apache.maven.plugins:maven-help-plugin:3.5.2:effective-pom \
     -Doutput="$abs_effective_dir/$name.xml" >>"$EFFECTIVE_LOG" 2>&1
 }
-
 if ! write_effective_pom pom.xml root; then
   progress_render "$current" "$total" "Effective POMs" FAIL
   progress_finish_line
@@ -150,22 +140,18 @@ while IFS= read -r module; do
 done < <(sed -n 's:.*<module>\([^<]*\)</module>.*:\1:p' pom.xml)
 progress_render "$current" "$total" "Effective POMs" PASS
 
-# 4. Resolve every build plugin and its transitive dependencies. Plugins are part of the executable supply chain.
 run_stage "Plugin dependency graph" "$REPORT_DIR/plugin-dependencies.txt" \
   "$MVNW" -B org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve-plugins \
   -DexcludeTransitive=false -DexcludeReactor=true || exit $?
 
-# 5. Dependency convergence is blocking: the resolved graph must not contain ambiguous version mediation.
 run_stage "Dependency convergence" "$REPORT_DIR/convergence.log" \
   "$MVNW" -B org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce \
   -Drules=dependencyConvergence -Denforcer.fail=true || exit $?
 
-# 6. Upper-bound drift is captured initially as advisory because Spring Boot's BOM is an intentional version authority.
 run_advisory_stage "Upper-bound drift" "$REPORT_DIR/upper-bound.log" \
   "$MVNW" -B org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce \
   -Drules=requireUpperBoundDeps -Denforcer.fail=true
 
-# 7. Generate an aggregate CycloneDX SBOM containing direct and transitive project dependencies.
 run_stage "CycloneDX SBOM" "$REPORT_DIR/sbom.log" \
   "$MVNW" -B org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom \
   -DoutputFormat=json -DoutputName=platform-spring-sbom -DoutputDirectory="$REPORT_DIR" || exit $?
@@ -178,26 +164,25 @@ if [[ ! -s "$SBOM" ]]; then
 fi
 
 if [[ "$MODE" == "full" ]]; then
-  # 8. Version drift is evidence, not an automatic upgrade instruction.
   run_advisory_stage "Dependency updates" "$REPORT_DIR/dependency-updates.log" \
     "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-dependency-updates \
     -DprocessDependencyManagement=true -DallowSnapshots=false
 
-  # 9. Build-plugin drift is tracked separately because plugins have their own supply chain.
   run_advisory_stage "Plugin updates" "$REPORT_DIR/plugin-updates.log" \
     "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-plugin-updates \
     -DallowSnapshots=false
 
-  # 10. Query OSV and lifecycle intelligence using the resolved SBOM and governed policy.
   current=$((current + 1))
   progress_render "$current" "$total" "External intelligence" RUNNING
   if [[ "$VERBOSE" == "1" ]]; then
     "$PYTHON" scripts/dependency_health.py external \
-      --sbom "$SBOM" --policy "$POLICY_FILE" --report-dir "$REPORT_DIR" 2>&1 | tee "$REPORT_DIR/external-intelligence.log"
+      --sbom "$SBOM" --plugin-dependencies "$REPORT_DIR/plugin-dependencies.txt" \
+      --policy "$POLICY_FILE" --report-dir "$REPORT_DIR" 2>&1 | tee "$REPORT_DIR/external-intelligence.log"
     intel_status=${PIPESTATUS[0]}
   else
     "$PYTHON" scripts/dependency_health.py external \
-      --sbom "$SBOM" --policy "$POLICY_FILE" --report-dir "$REPORT_DIR" >"$REPORT_DIR/external-intelligence.log" 2>&1
+      --sbom "$SBOM" --plugin-dependencies "$REPORT_DIR/plugin-dependencies.txt" \
+      --policy "$POLICY_FILE" --report-dir "$REPORT_DIR" >"$REPORT_DIR/external-intelligence.log" 2>&1
     intel_status=$?
   fi
   if (( intel_status != 0 )); then
@@ -210,10 +195,10 @@ if [[ "$MODE" == "full" ]]; then
   fi
   progress_render "$current" "$total" "External intelligence" PASS
 else
-  # Local mode still emits a machine-readable inventory/policy report without network calls.
   if command -v "$PYTHON" >/dev/null 2>&1; then
     "$PYTHON" scripts/dependency_health.py local \
-      --sbom "$SBOM" --policy "$POLICY_FILE" --report-dir "$REPORT_DIR" >"$REPORT_DIR/local-analysis.log" 2>&1 || {
+      --sbom "$SBOM" --plugin-dependencies "$REPORT_DIR/plugin-dependencies.txt" \
+      --policy "$POLICY_FILE" --report-dir "$REPORT_DIR" >"$REPORT_DIR/local-analysis.log" 2>&1 || {
         progress_finish_line
         echo "[dependency-health] FAIL — local SBOM policy analysis"
         tail -40 "$REPORT_DIR/local-analysis.log" || true
@@ -229,7 +214,6 @@ fi
 progress_finish_line
 finished_at=$(date +%s)
 elapsed=$((finished_at - started_at))
-
 if (( warnings > 0 )); then
   echo "[dependency-health] WARN — $warnings advisory stage(s); inspect $REPORT_DIR"
 fi
