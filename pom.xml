@@ -24,6 +24,7 @@
     <module>adumun-spring-rest</module>
     <module>adumun-spring-test</module>
     <module>adumun-spring-security</module>
+    <module>adumun-spring-security-oidc</module>
     <module>adumun-spring-observability</module>
     <module>adumun-spring-resilience</module>
     <module>examples/reference-consumer</module>
