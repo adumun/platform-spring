@@ -1,0 +1,34 @@
+schema_version: 1
+record_id: SPRING-OPS-001-2026-09-07-PASS
+slice_id: SPRING-OPS-001
+repository: adumun/platform-spring
+branch: feat/spring-observability-resilience-baseline
+evaluated_revision: e745663c9892cc0029cad4d034a69836e943df03
+validation:
+  command: make validate
+  result: PASS
+  duration_seconds: 13
+  observed_output:
+    deps: PASS
+    reactor_modules: 7
+    final_state: PASS
+    full_log_path: .validation/validate.log
+environment:
+  java: 25
+  spring_boot: 4.1.1
+  web_stack: SPRING_MVC_SERVLET
+  resilience4j: 2.4.0
+capabilities_validated:
+  - adumun-spring-observability_compiles_and_tests
+  - adumun-spring-resilience_compiles_and_tests
+  - reference_consumer_composes_observability_and_resilience
+  - concise_validation_progress_contract
+  - no_reactive_baseline
+notes:
+  - first observability test failure was corrected because KeyValues iteration order is not contractual
+  - validation progress state preservation bug on failure was corrected before final PASS
+  - resilience compile dependency declarations were made explicit before final PASS
+claim_scope:
+  - confirms local clean validation of exact evaluated revision
+  - does not claim production OTLP backend integration
+  - does not establish universal retry timeout breaker or sampling values
