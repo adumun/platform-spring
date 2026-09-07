@@ -22,6 +22,11 @@ MAVEN_COORDINATE = re.compile(
     r"(?P<group>[A-Za-z0-9_.-]+):(?P<artifact>[A-Za-z0-9_.-]+):"
     r"(?P<type>[A-Za-z0-9_.-]+):(?P<version>[A-Za-z0-9_.+\-]+)(?::[A-Za-z0-9_.-]+)?"
 )
+TREE_COORDINATE = re.compile(
+    r"(?P<group>[A-Za-z0-9_.-]+):(?P<artifact>[A-Za-z0-9_.-]+):"
+    r"(?P<type>[A-Za-z0-9_.-]+):(?:(?P<classifier>[A-Za-z0-9_.-]+):)?"
+    r"(?P<version>[A-Za-z0-9_.+\-]+):(?P<scope>[A-Za-z0-9_.-]+)"
+)
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -77,23 +82,88 @@ def component_label(component: dict[str, Any]) -> str:
     return f"{group + ':' if group else ''}{name}:{version}"
 
 
-def parse_plugin_components(path: Path | None) -> list[dict[str, str]]:
+def maven_purl(group: str, artifact: str, version: str) -> str:
+    return f"pkg:maven/{group}/{artifact}@{version}"
+
+
+def normalize_info_line(raw: str) -> str:
+    return raw[7:] if raw.startswith("[INFO] ") else raw
+
+
+def parse_dependency_paths(path: Path | None) -> dict[str, list[str]]:
+    """Return the shortest observed reactor introduction path per resolved Maven purl."""
+    if path is None or not path.exists():
+        return {}
+    paths: dict[str, list[str]] = {}
+    module = "reactor"
+    stack: dict[int, str] = {}
+
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = normalize_info_line(raw)
+        if line.startswith("--- ") and " @ " in line:
+            module = line.rsplit(" @ ", 1)[-1].rstrip(" -")
+            stack.clear()
+            continue
+        marker_positions = [position for marker in ("+- ", "\\- ") if (position := line.find(marker)) >= 0]
+        if not marker_positions:
+            continue
+        marker = min(marker_positions)
+        candidate = line[marker + 3 :]
+        match = TREE_COORDINATE.search(candidate)
+        if not match:
+            continue
+        coordinate = f"{match.group('group')}:{match.group('artifact')}:{match.group('version')}"
+        purl = maven_purl(match.group("group"), match.group("artifact"), match.group("version"))
+        depth = marker // 3 + 1
+        stack[depth] = coordinate
+        for stale_depth in [key for key in stack if key > depth]:
+            del stack[stale_depth]
+        introduction = [module] + [stack[key] for key in sorted(stack) if key <= depth]
+        existing = paths.get(purl)
+        if existing is None or len(introduction) < len(existing):
+            paths[purl] = introduction
+    return paths
+
+
+def parse_plugin_components(path: Path | None) -> list[dict[str, Any]]:
+    """Parse Maven resolve-plugins output and preserve plugin -> dependency introduction paths."""
     if path is None or not path.exists():
         return []
-    found: dict[str, dict[str, str]] = {}
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
-        for match in MAVEN_COORDINATE.finditer(line):
-            group = match.group("group")
-            artifact = match.group("artifact")
-            version = match.group("version")
-            if group == "io.adumun.platform":
-                continue
-            purl = f"pkg:maven/{group}/{artifact}@{version}"
-            found[purl] = {
-                "purl": purl,
-                "label": f"{group}:{artifact}:{version}",
-                "origin": "build-plugin-graph",
-            }
+    found: dict[str, dict[str, Any]] = {}
+    active_plugin: str | None = None
+    active_indent = 0
+
+    for raw in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        line = normalize_info_line(raw)
+        match = MAVEN_COORDINATE.search(line)
+        if not match:
+            continue
+        group = match.group("group")
+        artifact = match.group("artifact")
+        version = match.group("version")
+        if group == "io.adumun.platform":
+            continue
+        purl = maven_purl(group, artifact, version)
+        coordinate = f"{group}:{artifact}:{version}"
+        indent = len(line) - len(line.lstrip())
+        is_plugin = match.group("type") in {"maven-plugin", "plugin"}
+
+        if is_plugin or active_plugin is None or indent <= active_indent:
+            active_plugin = coordinate
+            active_indent = indent
+            introduction = [coordinate]
+        else:
+            introduction = [active_plugin, coordinate]
+
+        current = found.get(purl)
+        candidate = {
+            "purl": purl,
+            "label": coordinate,
+            "origin": "build-plugin-graph",
+            "introduction_path": introduction,
+        }
+        if current is None or len(candidate["introduction_path"]) < len(current["introduction_path"]):
+            found[purl] = candidate
     return sorted(found.values(), key=lambda item: item["purl"])
 
 
@@ -181,18 +251,24 @@ def analyze_local(sbom: dict[str, Any], policy: dict[str, Any]) -> dict[str, Any
 
 def query_osv(
     sbom: dict[str, Any],
-    plugin_components: list[dict[str, str]],
+    dependency_paths: dict[str, list[str]],
+    plugin_components: list[dict[str, Any]],
     policy: dict[str, Any],
     today: dt.date,
 ) -> dict[str, Any]:
-    components_by_purl: dict[str, dict[str, str]] = {}
+    components_by_purl: dict[str, dict[str, Any]] = {}
     for component in sbom.get("components", []) or []:
         if not isinstance(component, dict) or not component.get("purl"):
             continue
         purl = str(component["purl"])
         if purl.startswith("pkg:maven/io.adumun.platform/"):
             continue
-        components_by_purl[purl] = {"purl": purl, "label": component_label(component), "origin": "application-graph"}
+        components_by_purl[purl] = {
+            "purl": purl,
+            "label": component_label(component),
+            "origin": "application-graph",
+            "introduction_path": dependency_paths.get(purl, [component_label(component)]),
+        }
     for plugin_component in plugin_components:
         components_by_purl.setdefault(plugin_component["purl"], plugin_component)
 
@@ -209,6 +285,7 @@ def query_osv(
                     "component": component["label"],
                     "purl": component["purl"],
                     "origin": component["origin"],
+                    "introduction_path": component["introduction_path"],
                     "id": vuln.get("id"),
                     "modified": vuln.get("modified"),
                 })
@@ -305,6 +382,7 @@ def run_local(args: argparse.Namespace) -> int:
             "local mode does not claim current vulnerability intelligence",
             "local mode does not claim current upstream lifecycle status",
             "availability of a newer version alone is not treated as a defect",
+            "generic upstream bug trackers are not universally machine-detectable and are not claimed by this gate",
         ],
     }
     write_json(report_dir / "report.json", report)
@@ -331,9 +409,10 @@ def run_external(args: argparse.Namespace) -> int:
         print("local policy blockers prevent a full health claim")
         return 1
 
+    dependency_paths = parse_dependency_paths(Path(args.dependency_tree) if args.dependency_tree else None)
     plugin_components = parse_plugin_components(Path(args.plugin_dependencies) if args.plugin_dependencies else None)
     try:
-        osv = query_osv(sbom, plugin_components, policy, today)
+        osv = query_osv(sbom, dependency_paths, plugin_components, policy, today)
         lifecycle = query_lifecycle(policy, today)
     except RuntimeError as exc:
         write_json(report_dir / "report.json", {
@@ -364,6 +443,10 @@ def run_external(args: argparse.Namespace) -> int:
             "upper_bound_drift": "ADVISORY_PENDING_BASELINE",
             "missing_license_metadata": policy.get("license_policy", {}).get("missing_metadata", "WARN"),
         },
+        "non_claims": [
+            "availability of a newer version alone is not treated as a defect",
+            "generic upstream bug trackers are not universally machine-detectable and are not claimed by this gate",
+        ],
     })
     print(f"OSV findings: {osv['finding_count']} ({osv['blocking_count']} blocking)")
     print(f"OSV components: {osv['application_component_count']} application + {osv['plugin_component_count']} plugin")
@@ -382,6 +465,7 @@ def parse_args() -> argparse.Namespace:
         sub.add_argument("--sbom", required=True)
         sub.add_argument("--policy", required=True)
         sub.add_argument("--report-dir", required=True)
+        sub.add_argument("--dependency-tree")
         sub.add_argument("--plugin-dependencies")
     return parser.parse_args()
 
