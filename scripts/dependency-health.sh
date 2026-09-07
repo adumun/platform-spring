@@ -38,9 +38,9 @@ mkdir -p "$REPORT_DIR/effective-pom"
 
 started_at=$(date +%s)
 if [[ "$MODE" == "full" ]]; then
-  total=9
+  total=10
 else
-  total=6
+  total=7
 fi
 current=0
 warnings=0
@@ -150,17 +150,22 @@ while IFS= read -r module; do
 done < <(sed -n 's:.*<module>\([^<]*\)</module>.*:\1:p' pom.xml)
 progress_render "$current" "$total" "Effective POMs" PASS
 
-# 4. Dependency convergence is blocking: the resolved graph must not contain ambiguous version mediation.
+# 4. Resolve every build plugin and its transitive dependencies. Plugins are part of the executable supply chain.
+run_stage "Plugin dependency graph" "$REPORT_DIR/plugin-dependencies.txt" \
+  "$MVNW" -B org.apache.maven.plugins:maven-dependency-plugin:3.11.0:resolve-plugins \
+  -DexcludeTransitive=false -DexcludeReactor=true || exit $?
+
+# 5. Dependency convergence is blocking: the resolved graph must not contain ambiguous version mediation.
 run_stage "Dependency convergence" "$REPORT_DIR/convergence.log" \
   "$MVNW" -B org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce \
   -Drules=dependencyConvergence -Denforcer.fail=true || exit $?
 
-# 5. Upper-bound drift is captured initially as advisory because Spring Boot's BOM is an intentional version authority.
+# 6. Upper-bound drift is captured initially as advisory because Spring Boot's BOM is an intentional version authority.
 run_advisory_stage "Upper-bound drift" "$REPORT_DIR/upper-bound.log" \
   "$MVNW" -B org.apache.maven.plugins:maven-enforcer-plugin:3.6.3:enforce \
   -Drules=requireUpperBoundDeps -Denforcer.fail=true
 
-# 6. Generate an aggregate CycloneDX SBOM containing direct and transitive dependencies.
+# 7. Generate an aggregate CycloneDX SBOM containing direct and transitive project dependencies.
 run_stage "CycloneDX SBOM" "$REPORT_DIR/sbom.log" \
   "$MVNW" -B org.cyclonedx:cyclonedx-maven-plugin:2.9.3:makeAggregateBom \
   -DoutputFormat=json -DoutputName=platform-spring-sbom -DoutputDirectory="$REPORT_DIR" || exit $?
@@ -173,17 +178,17 @@ if [[ ! -s "$SBOM" ]]; then
 fi
 
 if [[ "$MODE" == "full" ]]; then
-  # 7. Version drift is evidence, not an automatic upgrade instruction.
+  # 8. Version drift is evidence, not an automatic upgrade instruction.
   run_advisory_stage "Dependency updates" "$REPORT_DIR/dependency-updates.log" \
     "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-dependency-updates \
     -DprocessDependencyManagement=true -DallowSnapshots=false
 
-  # 8. Build-plugin drift is tracked separately because plugins have their own supply chain.
+  # 9. Build-plugin drift is tracked separately because plugins have their own supply chain.
   run_advisory_stage "Plugin updates" "$REPORT_DIR/plugin-updates.log" \
     "$MVNW" -B org.codehaus.mojo:versions-maven-plugin:2.21.0:display-plugin-updates \
     -DallowSnapshots=false
 
-  # 9. Query OSV and lifecycle intelligence using the resolved SBOM and governed policy.
+  # 10. Query OSV and lifecycle intelligence using the resolved SBOM and governed policy.
   current=$((current + 1))
   progress_render "$current" "$total" "External intelligence" RUNNING
   if [[ "$VERBOSE" == "1" ]]; then
