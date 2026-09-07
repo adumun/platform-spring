@@ -5,8 +5,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import io.adumun.platform.spring.observability.AdumunObservabilityConfiguration.AdumunObservationTags;
-import io.adumun.platform.spring.resilience.AdumunResilienceConfiguration.AdumunResilienceRegistry;
+import io.adumun.platform.spring.observability.AdumunObservationTags;
+import io.adumun.platform.spring.resilience.AdumunResilienceRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
