@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "policy_id": "PLATFORM-SPRING-DEPENDENCY-HEALTH",
+  "standard": "STD-ENG-DEP-001",
+  "scope": {
+    "direct_dependencies": true,
+    "transitive_dependencies": true,
+    "parents": true,
+    "bom_and_dependency_management": true,
+    "build_plugins": true,
+    "plugin_dependencies": true
+  },
+  "deterministic_policy": {
+    "deprecated_api_usage": "BLOCK",
+    "dependency_convergence": "BLOCK",
+    "upper_bound_drift": "WARN_UNTIL_BASELINED",
+    "sbom_required": true,
+    "effective_pom_required": true
+  },
+  "external_intelligence_policy": {
+    "known_vulnerability": "REMEDIATE_UNLESS_GOVERNED_EXCEPTION",
+    "unsupported_or_eol_runtime": "REMEDIATE_UNLESS_GOVERNED_EXCEPTION",
+    "source_unavailable": "INCOMPLETE_NO_HEALTH_CLAIM",
+    "version_update_available": "INFORMATIONAL_REVIEW"
+  },
+  "blocked_coordinates": [],
+  "license_policy": {
+    "blocked_spdx": [],
+    "missing_metadata": "WARN",
+    "note": "No organization-wide license denylist has been canonically approved yet; the mechanism records license metadata and supports future blocking policy without silently inventing legal policy."
+  },
+  "lifecycle_checks": [
+    {
+      "product": "eclipse-temurin",
+      "cycle": "25",
+      "current_version": "25",
+      "reason": "Java runtime baseline"
+    },
+    {
+      "product": "spring-boot",
+      "cycle": "4.1",
+      "current_version": "4.1.1",
+      "reason": "Framework parent and managed dependency baseline"
+    },
+    {
+      "product": "apache-maven",
+      "cycle": "3.9",
+      "current_version": "3.9.11",
+      "reason": "Maven Wrapper managed runtime"
+    }
+  ],
+  "exceptions": [],
+  "exception_contract": {
+    "required_fields": [
+      "finding_type",
+      "finding_id",
+      "reason",
+      "owner",
+      "created_at",
+      "expires_at",
+      "compensating_controls"
+    ],
+    "optional_fields": [
+      "component",
+      "invalidation_trigger",
+      "evidence"
+    ],
+    "allowed_states": [
+      "ACCEPTED_TEMPORARILY",
+      "FALSE_POSITIVE",
+      "NOT_AFFECTED"
+    ]
+  },
+  "sources": {
+    "vulnerability": "https://api.osv.dev",
+    "lifecycle": "https://endoflife.date/api/v1",
+    "sbom": "CycloneDX Maven Plugin",
+    "version_drift": "Versions Maven Plugin"
+  }
+}
