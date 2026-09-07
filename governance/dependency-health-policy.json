@@ -10,6 +10,19 @@
     "build_plugins": true,
     "plugin_dependencies": true
   },
+  "coverage": {
+    "deprecated_repository_API_usage": "IMPLEMENTED",
+    "recursive_application_dependency_graph": "IMPLEMENTED",
+    "recursive_build_plugin_dependency_graph": "IMPLEMENTED",
+    "parent_BOM_effective_model": "IMPLEMENTED",
+    "dependency_convergence": "IMPLEMENTED",
+    "SBOM_application_graph": "IMPLEMENTED",
+    "known_vulnerabilities_application_and_plugin_graph": "IMPLEMENTED_OSV",
+    "runtime_framework_lifecycle": "IMPLEMENTED_GOVERNED_PRODUCTS",
+    "license_metadata": "IMPLEMENTED_METADATA_ONLY",
+    "artifact_signature_attestation_provenance": "NOT_IMPLEMENTED",
+    "generic_upstream_bug_tracker_correlation": "NOT_UNIVERSALLY_MACHINE_DETECTABLE"
+  },
   "deterministic_policy": {
     "deprecated_api_usage": "BLOCK",
     "dependency_convergence": "BLOCK",
