@@ -1,0 +1,8 @@
+adumun:
+  observability:
+    service-name: onboarding-observability
+    environment: test
+    build-version: 0.0.1
+    tracing:
+      export-enabled: false
+      sampling-probability: 0.25

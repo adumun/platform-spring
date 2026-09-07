@@ -23,7 +23,7 @@ class AdumunResilienceConfigurationTest {
         policy.getRetry().setEnabled(true);
         properties.getDependencies().put("payments", policy);
 
-        assertThatThrownBy(() -> new AdumunResilienceConfiguration.AdumunResilienceRegistry(properties))
+        assertThatThrownBy(() -> new AdumunResilienceRegistry(properties))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("idempotent=true");
     }
@@ -38,7 +38,7 @@ class AdumunResilienceConfigurationTest {
         policy.getCircuitBreaker().setEnabled(true);
         properties.getDependencies().put("catalog", policy);
 
-        var registry = new AdumunResilienceConfiguration.AdumunResilienceRegistry(properties);
+        var registry = new AdumunResilienceRegistry(properties);
 
         assertThat(registry.retries().retry("catalog").getRetryConfig().getMaxAttempts()).isEqualTo(3);
         assertThat(registry.circuitBreakers().circuitBreaker("catalog").getCircuitBreakerConfig().getFailureRateThreshold()).isEqualTo(50.0f);

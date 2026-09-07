@@ -1,4 +1,4 @@
-.PHONY: deps validate test package
+.PHONY: deps validate onboarding test package
 
 MVNW := ./mvnw
 VALIDATION_DIR := .validation
@@ -16,6 +16,9 @@ deps:
 
 validate: deps
 	@VERBOSE=$(VERBOSE) MVNW=$(MVNW) VALIDATION_DIR=$(VALIDATION_DIR) VALIDATION_LOG=$(VALIDATION_LOG) bash scripts/validate.sh
+
+onboarding:
+	@VERBOSE=$(VERBOSE) PUBLISHED=$(PUBLISHED) VERSION=$(VERSION) MVNW=$(MVNW) VALIDATION_DIR=$(VALIDATION_DIR) bash scripts/onboarding.sh
 
 test: deps
 	@if [ "$(VERBOSE)" = "1" ]; then \
