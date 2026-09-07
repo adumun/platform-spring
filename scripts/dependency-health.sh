@@ -5,6 +5,7 @@ set -o pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$ROOT_DIR"
 
+PROGRESS_PREFIX=dependency-health
 source scripts/progress.sh
 
 MODE=${1:-local}
