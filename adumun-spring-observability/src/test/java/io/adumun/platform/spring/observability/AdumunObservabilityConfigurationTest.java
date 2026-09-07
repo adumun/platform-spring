@@ -13,7 +13,7 @@ class AdumunObservabilityConfigurationTest {
         properties.setEnvironment("test");
         properties.setBuildVersion("abc123");
 
-        var tags = new AdumunObservabilityConfiguration.AdumunObservationTags(properties).commonTags();
+        var tags = new AdumunObservationTags(properties).commonTags();
 
         assertThat(tags.stream().map(kv -> kv.getKey() + "=" + kv.getValue()).toList())
                 .containsExactlyInAnyOrder(
