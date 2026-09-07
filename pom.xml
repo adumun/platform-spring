@@ -18,6 +18,13 @@
   <properties>
     <java.version>25</java.version>
     <resilience4j.version>2.4.0</resilience4j.version>
+
+    <!-- Dependency-health tooling is pinned deliberately so evidence is reproducible. -->
+    <adumun.health.maven-enforcer.version>3.6.3</adumun.health.maven-enforcer.version>
+    <adumun.health.maven-dependency.version>3.11.0</adumun.health.maven-dependency.version>
+    <adumun.health.maven-help.version>3.5.2</adumun.health.maven-help.version>
+    <adumun.health.cyclonedx.version>2.9.3</adumun.health.cyclonedx.version>
+    <adumun.health.versions-maven-plugin.version>2.21.0</adumun.health.versions-maven-plugin.version>
   </properties>
 
   <modules>
@@ -29,4 +36,19 @@
     <module>adumun-spring-resilience</module>
     <module>examples/reference-consumer</module>
   </modules>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <showDeprecation>true</showDeprecation>
+          <compilerArgs>
+            <arg>-Xlint:deprecation</arg>
+          </compilerArgs>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
 </project>
