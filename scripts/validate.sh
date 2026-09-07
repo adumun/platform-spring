@@ -18,6 +18,11 @@ mkdir -p "$VALIDATION_DIR"
 
 started_at=$(date +%s)
 
+if ! bash scripts/check-no-legacy-testcontainers-api.sh; then
+  echo "[validate] FAIL — deprecated API guard"
+  exit 1
+fi
+
 if [[ "$VERBOSE" == "1" ]]; then
   echo "[validate] Verbose mode — streaming Maven output"
   "$MVNW" -B clean verify 2>&1 | tee "$LOG_FILE"
