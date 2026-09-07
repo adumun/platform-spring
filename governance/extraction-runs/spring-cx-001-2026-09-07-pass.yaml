@@ -1,0 +1,33 @@
+schema_version: 1
+record_id: spring-cx-001-2026-09-07-pass
+slice_id: SPRING-CX-001
+result: PASS
+evaluated_revision: 47d2fe1645c1f6f4d3327de5c30a2a88ef6a969f
+branch: feat/spring-consumer-experience-hardening
+command: make validate
+runtime:
+  java: 25
+  spring_boot: 4.1.1
+  web_stack: SPRING_MVC_SERVLET
+validation:
+  reactor_modules: 7
+  rest_auto_configuration: PASS
+  security_auto_configuration: PASS
+  observability_auto_configuration: PASS
+  resilience_auto_configuration: PASS
+  reference_consumer_without_manual_adumun_infrastructure_imports: PASS
+  overall: PASS
+consumer_experience_contract:
+  application_main_requires_manual_adumun_imports: false
+  consumer_owned_extensions:
+    - application_authorization_rules
+    - identity_provider_or_JwtDecoder_configuration_when_no_supported_adapter_is_selected
+    - environment_specific_adumun_properties
+  platform_owned_mechanics:
+    - REST_infrastructure_wiring
+    - security_filter_chain_and_handlers
+    - observability_wiring
+    - resilience_wiring
+notes:
+  - User reported the final local make validate execution as GREEN.
+  - This evidence certifies the exact evaluated revision, not the later evidence commit.
