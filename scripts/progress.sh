@@ -26,6 +26,7 @@ progress_render() {
   local empty=0
   local bar_fill=''
   local bar_empty=''
+  local prefix=${PROGRESS_PREFIX:-validate}
 
   if (( total > 0 )); then
     filled=$((current * width / total))
@@ -39,9 +40,9 @@ progress_render() {
   bar_empty=${bar_empty// /-}
 
   if progress_is_interactive; then
-    printf '\r[validate] [%s%s] %d/%d %-36s %s' "$bar_fill" "$bar_empty" "$current" "$total" "$label" "$state"
+    printf '\r[%s] [%s%s] %d/%d %-36s %s' "$prefix" "$bar_fill" "$bar_empty" "$current" "$total" "$label" "$state"
   else
-    printf '[validate] [%d/%d] %s — %s\n' "$current" "$total" "$label" "$state"
+    printf '[%s] [%d/%d] %s — %s\n' "$prefix" "$current" "$total" "$label" "$state"
   fi
 }
 
