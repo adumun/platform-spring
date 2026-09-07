@@ -32,14 +32,16 @@ public class AdumunOidcSecurityAutoConfiguration {
         NimbusJwtDecoder decoder = StringUtils.hasText(properties.getJwkSetUri())
                 ? NimbusJwtDecoder.withJwkSetUri(properties.getJwkSetUri()).build()
                 : NimbusJwtDecoder.withIssuerLocation(properties.getIssuerUri()).build();
+        decoder.setJwtValidator(jwtValidator(properties));
+        return decoder;
+    }
 
+    static OAuth2TokenValidator<Jwt> jwtValidator(AdumunOidcSecurityProperties properties) {
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
         validators.add(JwtValidators.createDefaultWithIssuer(properties.getIssuerUri()));
         properties.getAudiences().stream()
                 .map(JwtAudienceValidator::new)
                 .forEach(validators::add);
-
-        decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(validators));
-        return decoder;
+        return new DelegatingOAuth2TokenValidator<>(validators);
     }
 }
