@@ -1,0 +1,51 @@
+schema_version: 1
+record_id: SPRING-ONB-001-2026-09-07-PASS
+slice: SPRING-ONB-001
+status: PASS
+repository: adumun/platform-spring
+branch: feat/spring-isolated-onboarding-projects
+evaluated_revision: ee697a01afbefde2ad69e6f54477807a5dc8c1eb
+validation:
+  reactor:
+    command: make validate
+    result: PASS
+    modules: 8
+    duration_seconds: 16
+    warning_lines: 1
+  isolated_onboarding:
+    command: make onboarding
+    result: PASS
+    projects: 6
+    duration_seconds: 46
+    evidence_strength: LOCAL_ISOLATED_ARTIFACT_CONSUMER_BOUNDARY
+    projects_passed:
+      - rest-minimal
+      - security-custom-decoder
+      - security-oidc
+      - observability-minimal
+      - resilience-dependency
+      - full-stack-service
+consumer_boundary:
+  reactor_membership: false
+  parent_relative_path_to_platform_repo: false
+  source_dependency_on_platform_modules: false
+  candidate_artifact_repository: .validation/onboarding-m2
+  adumun_group_reinstalled_for_gate: true
+claims:
+  - platform modules remain GREEN in the canonical reactor
+  - six standalone Spring Boot consumers resolve and use ADUMUN artifacts from an isolated local Maven repository
+  - REST auto-configuration works without manual infrastructure import
+  - security custom-decoder flow works without custom SecurityFilterChain plumbing
+  - generic OIDC adapter works as consumer-facing auto-configuration
+  - observability public contract is consumable from a standalone application
+  - resilience public contract and fail-fast idempotency convention are consumable from a standalone application
+  - all selected capabilities compose in a full-stack standalone consumer
+non_claims:
+  - this evidence does not prove remote artifact publication or consumption from a hosted package repository
+  - this evidence does not certify Firebase or Microsoft Entra adapters
+source_log:
+  local_path: spring-onboarding-gate-result.txt
+  summary:
+    gate_result: PASS
+    validate: PASS
+    onboarding: PASS

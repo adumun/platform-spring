@@ -1,0 +1,61 @@
+schema_version: 1
+record_id: SPRING-SEC-001-2026-09-06-PASS
+slice_id: SPRING-SEC-001
+status: PASS
+repository: adumun/platform-spring
+branch: feat/spring-security-baseline
+evaluated_revision: cba39629fa76bfd1ef686860b90faa3734fe7ffa
+evaluated_at_local_date: 2026-09-06
+runtime:
+  java:
+    distribution: Temurin
+    version: 25.0.4
+    lts: true
+  maven:
+    source: wrapper
+    version: 3.9.11
+  spring_boot: 4.1.1
+  web_stack: SPRING_MVC_SERVLET
+  docker:
+    required_for_validation: true
+command:
+  default: make validate
+  verbose: make validate VERBOSE=1
+result:
+  dependencies: PASS
+  compile: PASS
+  tests: PASS
+  package: PASS
+  security_convention_configuration: PASS
+  cors_convention: PASS
+  command_output_contract: PASS
+  total_duration_seconds: 11
+  final_state: PASS
+observed_default_output:
+  - "[deps] PASS — Java 25, Maven Wrapper, Docker daemon"
+  - "[validate] real Maven reactor progress visible in interactive terminal"
+  - "[validate] Maven reactor PASS"
+  - "[validate] PASS — 11s"
+  - "[validate] Full log: .validation/validate.log"
+validated_capabilities:
+  - stateless bearer security baseline
+  - standard 401 authentication response
+  - standard 403 authorization response
+  - request and correlation identifier preservation on security failures
+  - declarative public path configuration
+  - declarative CORS configuration with disabled-by-default behavior
+  - invalid CORS configuration rejected safely
+  - consumer authorization extension without custom SecurityFilterChain plumbing
+  - concise default validation output
+  - verbose diagnostic mode available
+  - deterministic PASS/FAIL command semantics
+non_claims:
+  - no production identity provider adapter certified by this evidence
+  - no universal issuer or audience policy
+  - no universal role model
+  - no WebFlux or reactive security baseline
+  - no observability or resilience implementation claim
+provenance_note: >-
+  This evidence records the human-observed local validation result for the exact evaluated revision.
+  This evidence file is committed after the evaluated source revision and therefore its own commit SHA
+  is intentionally not the evaluated revision.
