@@ -49,6 +49,10 @@ public class AdumunOidcSecurityProperties {
             throw new IllegalStateException(
                     "adumun.security.identity.oidc.issuer-uri is required when the OIDC adapter is enabled");
         }
+        if (audiences.isEmpty()) {
+            throw new IllegalStateException(
+                    "adumun.security.identity.oidc.audiences must contain at least one value when the OIDC adapter is enabled");
+        }
         if (audiences.stream().anyMatch(audience -> !StringUtils.hasText(audience))) {
             throw new IllegalStateException(
                     "adumun.security.identity.oidc.audiences must not contain blank values");
