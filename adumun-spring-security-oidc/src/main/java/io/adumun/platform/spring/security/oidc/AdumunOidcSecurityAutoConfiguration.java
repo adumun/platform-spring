@@ -27,8 +27,6 @@ public class AdumunOidcSecurityAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(JwtDecoder.class)
     JwtDecoder adumunOidcJwtDecoder(AdumunOidcSecurityProperties properties) {
-        properties.validateEnabledConfiguration();
-
         NimbusJwtDecoder decoder = StringUtils.hasText(properties.getJwkSetUri())
                 ? NimbusJwtDecoder.withJwkSetUri(properties.getJwkSetUri()).build()
                 : NimbusJwtDecoder.withIssuerLocation(properties.getIssuerUri()).build();
@@ -37,6 +35,7 @@ public class AdumunOidcSecurityAutoConfiguration {
     }
 
     static OAuth2TokenValidator<Jwt> jwtValidator(AdumunOidcSecurityProperties properties) {
+        properties.validateEnabledConfiguration();
         List<OAuth2TokenValidator<Jwt>> validators = new ArrayList<>();
         validators.add(JwtValidators.createDefaultWithIssuer(properties.getIssuerUri()));
         properties.getAudiences().stream()
