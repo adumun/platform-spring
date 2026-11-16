@@ -27,6 +27,7 @@ public class AdumunOidcSecurityAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean(JwtDecoder.class)
     JwtDecoder adumunOidcJwtDecoder(AdumunOidcSecurityProperties properties) {
+        properties.validateEnabledConfiguration();
         NimbusJwtDecoder decoder = StringUtils.hasText(properties.getJwkSetUri())
                 ? NimbusJwtDecoder.withJwkSetUri(properties.getJwkSetUri()).build()
                 : NimbusJwtDecoder.withIssuerLocation(properties.getIssuerUri()).build();
