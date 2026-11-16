@@ -17,6 +17,7 @@ A global Maven installation is not required. Repository validation must use the 
 - `adumun-spring-rest` — request/correlation context, shared response/error envelopes, centralized error handling, liveness/readiness, Servlet integration.
 - `adumun-spring-test` — PostgreSQL Testcontainers and Flyway verification support.
 - `adumun-spring-security` — provider-neutral stateless bearer security, standard 401/403 handling, declarative CORS, public-path configuration and narrow authorization extension points.
+- `adumun-spring-security-oidc-client` — opt-in confidential OIDC login client (PKCE S256, constrained registration and consumer admission); explicit security-chain composition.
 - `adumun-spring-security-oidc` — generic OIDC/JWT identity adapter that supplies `JwtDecoder` mechanics from declarative ADÜMÜN configuration while preserving issuer/audience validation and consumer override semantics.
 - `adumun-spring-observability` — operational identity, Micrometer Observation/Tracing integration, OpenTelemetry bridge and request/correlation logging context.
 - `adumun-spring-resilience` — named dependency policies for retry, exponential backoff/jitter, circuit breaker, bulkhead and timeout using Resilience4j Boot 4.
@@ -100,6 +101,25 @@ The adapter is disabled by default. When enabled, `issuer-uri` is required. Ever
 
 Provider-specific adapters such as Firebase and Microsoft Entra should build on this model without introducing provider semantics into `adumun-spring-security`.
 
+### OIDC Login Client — consumer-owned policy (ADU-181)
+
+The login module is intentionally separate from JWT Resource Server. It does **not** create a `SecurityFilterChain`, override CSRF/session defaults, choose success redirects or alter other applications. The consuming product must supply an `AdumunOidcIdentityAcceptance` policy and compose its own ordered login and deny-by-default chains, using `AdumunOidcLoginConfigurer`.
+
+Configure a confidential `authorization_code` registration in `spring.security.oauth2.client.registration` and a trusted issuer/JWKS provider in `spring.security.oauth2.client.provider`. Configure client credentials via secrets, never Git.
+
+```yaml
+adumun:
+  security:
+    oidc-client:
+      enabled: true
+      registration-id: external
+      allowed-scopes: [openid]
+```
+
+The module enforces exact approved scopes (default `openid`) and PKCE S256 even for confidential clients. Spring Security handles state, nonce, token checks and code exchange. Identity's own hook resolves JIT identities and must deny revoked/suspended users. See `onboarding/security-oidc-login` for an isolated consumer example.
+
+**Delivery gate:** ADU-181 remains a draft until full negative callback tests, JDK 25 validation, session/token retention, CSRF and real Identity adoption are evidenced. No local module test alone proves E2E.
+
 ### Observability example
 
 ```yaml
@@ -165,6 +185,7 @@ Current onboarding paths:
 - REST minimal;
 - Security with consumer-owned custom `JwtDecoder`;
 - Generic OIDC/JWT Security;
+- OIDC Login Client with consumer-owned chains;
 - Observability minimal;
 - named dependency Resilience;
 - full-stack REST + Security/OIDC + Observability + Resilience composition.
