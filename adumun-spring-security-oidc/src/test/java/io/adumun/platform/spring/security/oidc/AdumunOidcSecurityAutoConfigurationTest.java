@@ -33,6 +33,20 @@ class AdumunOidcSecurityAutoConfigurationTest {
     }
 
     @Test
+    void enabledAdapterRequiresAtLeastOneAudience() {
+        contextRunner
+                .withPropertyValues(
+                        "adumun.security.identity.oidc.enabled=true",
+                        "adumun.security.identity.oidc.issuer-uri=https://issuer.example")
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .hasRootCauseInstanceOf(IllegalStateException.class)
+                            .hasStackTraceContaining("audiences must contain at least one value");
+                });
+    }
+
+    @Test
     void consumerJwtDecoderTakesPrecedence() {
         contextRunner
                 .withUserConfiguration(ConsumerDecoderConfiguration.class)
@@ -53,6 +67,9 @@ class AdumunOidcSecurityAutoConfigurationTest {
 
         assertThat(validator.validate(jwt(List.of("orders", "internal-api"))).hasErrors()).isFalse();
         assertThat(validator.validate(jwt(List.of("orders"))).hasErrors()).isTrue();
+        assertThat(validator.validate(jwt(List.of("internal-api"))).hasErrors()).isTrue();
+        assertThat(validator.validate(jwt(List.of("unrelated-api"))).hasErrors()).isTrue();
+        assertThat(validator.validate(jwt(List.of())).hasErrors()).isTrue();
     }
 
     private static Jwt jwt(List<String> audiences) {
