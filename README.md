@@ -105,6 +105,8 @@ Provider-specific adapters such as Firebase and Microsoft Entra should build on 
 
 The login module is intentionally separate from JWT Resource Server. It does **not** create a `SecurityFilterChain`, override CSRF/session defaults, choose success redirects or alter other applications. The consuming product must supply an `AdumunOidcIdentityAcceptance` policy and compose its own ordered login and deny-by-default chains, using `AdumunOidcLoginConfigurer`.
 
+Default: `AdumunOidcLoginConfigurer.configure(http)` uses a **non-persisting `OAuth2AuthorizedClientRepository`**, so upstream provider access/refresh tokens are not retained as an OAuth2 Authorized Client after login. A consumer that actually calls upstream provider APIs may explicitly opt in via `configure(http, consumerRepository)`, with its own storage, expiration and revocation controls. **This does not prevent Spring Security's OIDC principal from retaining the upstream ID Token in the local SecurityContext**. Identity must replace the upstream OIDC principal with a minimal local principal before persisting its authenticated session; verify this in ADU-171.
+
 Configure a confidential `authorization_code` registration in `spring.security.oauth2.client.registration` and a trusted issuer/JWKS provider in `spring.security.oauth2.client.provider`. Configure client credentials via secrets, never Git.
 
 ```yaml
