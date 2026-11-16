@@ -25,6 +25,18 @@ class AdumunOidcUserServiceTest {
     }
 
     @Test
+    void upstreamPrincipalFailureIsAlsoSanitized() {
+        var service = new AdumunOidcUserService(
+                request -> { throw new IllegalStateException("sensitive-provider-detail"); },
+                (request, user) -> {});
+        assertThatThrownBy(() -> service.loadUser(null))
+                .isInstanceOfSatisfying(OAuth2AuthenticationException.class, exception -> {
+                    assertThat(exception.getError().getErrorCode()).isEqualTo("identity_rejected");
+                    assertThat(exception.getMessage()).doesNotContain("sensitive-provider-detail");
+                });
+    }
+
+    @Test
     void consumerPolicyRejectionFailsClosedWithoutLeakingDetails() {
         var service = new AdumunOidcUserService(
                 request -> mock(OidcUser.class),

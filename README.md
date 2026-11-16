@@ -116,7 +116,7 @@ adumun:
       allowed-scopes: [openid]
 ```
 
-The module enforces exact approved scopes (default `openid`) and PKCE S256 even for confidential clients. Spring Security handles state, nonce, token checks and code exchange. Identity's own hook resolves JIT identities and must deny revoked/suspended users. See `onboarding/security-oidc-login` for an isolated consumer example.
+The module enforces exact approved scopes (default `openid`) and PKCE S256 even for confidential clients. Provider issuer, authorization, token and JWKS URLs must use HTTPS; `adumun.security.oidc-client.allow-insecure-loopback=true` is available **only** for an explicit loopback-only simulated IdP in local tests and must never be used in production. Its default is false. The default OIDC user service does not call UserInfo. Spring Security handles state, nonce, token checks and code exchange. Identity's own hook resolves JIT identities and must deny revoked/suspended users. See `onboarding/security-oidc-login` for an isolated consumer example.
 
 **Delivery gate:** ADU-181 remains a draft until full negative callback tests, JDK 25 validation, session/token retention, CSRF and real Identity adoption are evidenced. No local module test alone proves E2E.
 

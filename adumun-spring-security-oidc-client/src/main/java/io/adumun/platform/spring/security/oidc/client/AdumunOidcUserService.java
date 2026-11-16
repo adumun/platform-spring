@@ -24,8 +24,8 @@ public final class AdumunOidcUserService implements OAuth2UserService<OidcUserRe
 
     @Override
     public OidcUser loadUser(OidcUserRequest request) throws OAuth2AuthenticationException {
-        var user = Objects.requireNonNull(delegate.loadUser(request), "OIDC user must not be null");
         try {
+            var user = Objects.requireNonNull(delegate.loadUser(request), "OIDC user must not be null");
             acceptance.accept(request, user);
             return user;
         } catch (RuntimeException failure) {

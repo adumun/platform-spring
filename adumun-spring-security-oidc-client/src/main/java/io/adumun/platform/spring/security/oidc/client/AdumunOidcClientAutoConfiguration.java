@@ -39,7 +39,11 @@ public class AdumunOidcClientAutoConfiguration {
     @ConditionalOnMissingBean(name = "adumunOidcUserService")
     OAuth2UserService<OidcUserRequest, OidcUser> adumunOidcUserService(
             AdumunOidcIdentityAcceptance acceptance) {
-        return new AdumunOidcUserService(new OidcUserService(), acceptance);
+        var defaultService = new OidcUserService();
+        // Authentication in the initial slice relies only on the validated ID Token.
+        // Never call a provider's UserInfo endpoint implicitly.
+        defaultService.setRetrieveUserInfo(request -> false);
+        return new AdumunOidcUserService(defaultService, acceptance);
     }
 
     @Bean

@@ -2,6 +2,9 @@ package io.adumun.platform.spring.security.oidc.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.Base64;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -46,6 +49,20 @@ class AdumunOidcClientAutoConfigurationTest {
                             .containsKey("code_challenge");
                     assertThat(auth.getAttributes()).containsKey("code_verifier");
                     assertThat(auth.getAdditionalParameters()).containsKey("nonce");
+                    var second = resolver.resolve(request);
+                    assertThat(second).isNotNull();
+                    assertThat(second.getState()).isNotEqualTo(auth.getState());
+                    assertThat(second.getAdditionalParameters().get("nonce"))
+                            .isNotEqualTo(auth.getAdditionalParameters().get("nonce"));
+                    assertThat(second.getAttributes().get("code_verifier"))
+                            .isNotEqualTo(auth.getAttributes().get("code_verifier"));
+                    var verifier = (String) auth.getAttributes().get("code_verifier");
+                    var digest = MessageDigest.getInstance("SHA-256")
+                            .digest(verifier.getBytes(StandardCharsets.US_ASCII));
+                    var expectedChallenge = Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+                    assertThat(auth.getAdditionalParameters())
+                            .containsEntry("code_challenge", expectedChallenge);
+                    assertThat(auth.getAuthorizationRequestUri()).doesNotContain(verifier);
                     var other = new MockHttpServletRequest("GET", "/oauth2/authorization/other");
                     other.setServletPath("/oauth2/authorization/other");
                     assertThat(resolver.resolve(other)).isNull();
@@ -68,6 +85,30 @@ class AdumunOidcClientAutoConfigurationTest {
                 .withPropertyValues("adumun.security.oidc-client.enabled=true",
                         "adumun.security.oidc-client.registration-id=external")
                 .run(ctx -> assertThat(ctx).hasFailed());
+    }
+
+    @Test
+    void rejectsUntrustedNonLocalProviderEndpoints() {
+        var properties = new AdumunOidcClientProperties();
+        properties.setRegistrationId("external");
+        var invalid = ClientRegistration.withClientRegistration(oidcRegistration("openid"))
+                .tokenUri("http://attacker.example/token").build();
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> properties.validate(invalid))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("HTTPS");
+    }
+
+    @Test
+    void allowsExplicitLoopbackOnlyForLocalIdpSimulation() {
+        var properties = new AdumunOidcClientProperties();
+        properties.setRegistrationId("external");
+        properties.setAllowInsecureLoopback(true);
+        var local = ClientRegistration.withClientRegistration(oidcRegistration("openid"))
+                .authorizationUri("http://127.0.0.1:8081/authorize")
+                .tokenUri("http://127.0.0.1:8081/token")
+                .issuerUri("http://127.0.0.1:8081")
+                .jwkSetUri("http://127.0.0.1:8081/jwks").build();
+        properties.validate(local);
     }
 
     @Test
