@@ -28,8 +28,6 @@ public final class AdumunOidcUserService implements OAuth2UserService<OidcUserRe
         try {
             acceptance.accept(request, user);
             return user;
-        } catch (OAuth2AuthenticationException failure) {
-            throw failure;
         } catch (RuntimeException failure) {
             // The external response does not include domain error details or secrets.
             throw new OAuth2AuthenticationException(
