@@ -9,7 +9,6 @@
     <version>4.1.1</version>
     <relativePath/>
   </parent>
-
   <groupId>io.adumun.platform</groupId>
   <artifactId>platform-spring</artifactId>
   <version>0.1.0-alpha.0</version>
@@ -25,6 +24,7 @@
     <module>adumun-spring-test</module>
     <module>adumun-spring-security</module>
     <module>adumun-spring-security-oidc</module>
+    <module>adumun-spring-security-oidc-client</module>
     <module>adumun-spring-observability</module>
     <module>adumun-spring-resilience</module>
     <module>examples/reference-consumer</module>

@@ -1,0 +1,7 @@
+adumun:
+  security:
+    oidc-client:
+      enabled: true
+      registration-id: external
+      allowed-scopes:
+        - openid
