@@ -1,0 +1,9 @@
+adumun:
+  security:
+    identity:
+      oidc:
+        enabled: true
+        issuer-uri: https://issuer.example.test
+        jwk-set-uri: http://127.0.0.1:65535/jwks
+        audiences:
+          - onboarding-api

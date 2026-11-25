@@ -1,0 +1,6 @@
+adumun:
+  security:
+    public-paths:
+      - /public
+    cors:
+      enabled: false

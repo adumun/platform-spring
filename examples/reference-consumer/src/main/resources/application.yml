@@ -1,0 +1,41 @@
+adumun:
+  security:
+    public-paths:
+      - /live
+      - /ready
+      - /demo
+      - /demo/failure
+      - /demo/internal
+      - /security/public
+    cors:
+      enabled: false
+  observability:
+    service-name: platform-spring-reference-consumer
+    environment: test
+    build-version: 0.1.0-alpha.0
+    tracing:
+      export-enabled: false
+      sampling-probability: 0.1
+  resilience:
+    dependencies:
+      catalog:
+        idempotent: true
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-backoff: 50ms
+          multiplier: 2.0
+          jitter: 0.25
+        circuit-breaker:
+          enabled: true
+          failure-rate-threshold: 50
+          minimum-number-of-calls: 4
+          sliding-window-size: 8
+          open-state-duration: 1s
+        bulkhead:
+          enabled: true
+          max-concurrent-calls: 4
+          max-wait-duration: 0ms
+        timeout:
+          enabled: true
+          duration: 500ms

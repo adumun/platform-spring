@@ -1,0 +1,31 @@
+schema_version: 1
+run_id: spring-base-001-2026-09-06
+slice: SPRING-BASE-001
+status: VALIDATION_PENDING
+repository: adumun/platform-spring
+branch: feat/spring-test-service-baseline
+implementation_head: 32fd2c1fccd7b122b758813148f9d9e4a5147215
+runtime_baseline:
+  java: 25 LTS
+  spring_boot: 4.1.1
+modules:
+  - adumun-spring-rest
+  - adumun-spring-test
+reference_consumer: examples/reference-consumer
+validation_command: make validate
+expected_gates:
+  - reactor_compilation
+  - unit_tests
+  - reference_consumer_context_startup
+  - request_and_correlation_propagation
+  - centralized_public_error_mapping
+  - no_internal_error_leakage
+  - liveness_readiness_distinction
+  - reusable_postgresql_testcontainer_support
+  - flyway_verification_support
+non_claims:
+  - no_PASS_before_local_execution
+  - no_GradeOps_migration
+  - no_KeyGo_migration
+  - no_security_module
+  - no_observability_module
