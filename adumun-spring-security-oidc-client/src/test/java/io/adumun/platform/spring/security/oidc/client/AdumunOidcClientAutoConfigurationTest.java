@@ -63,6 +63,14 @@ class AdumunOidcClientAutoConfigurationTest {
                     assertThat(auth.getAdditionalParameters())
                             .containsEntry("code_challenge", expectedChallenge);
                     assertThat(auth.getAuthorizationRequestUri()).doesNotContain(verifier);
+                    var rootMapped = new MockHttpServletRequest("GET", "/oauth2/authorization/external");
+                    assertThat(rootMapped.getServletPath()).isEmpty();
+                    assertThat(resolver.resolve(rootMapped)).isNotNull();
+                    var contextual = new MockHttpServletRequest("GET", "/app/oauth2/authorization/external");
+                    contextual.setContextPath("/app");
+                    assertThat(resolver.resolve(contextual)).isNotNull();
+                    var wrong = new MockHttpServletRequest("GET", "/oauth2/authorization/other");
+                    assertThat(resolver.resolve(wrong)).isNull();
                     var other = new MockHttpServletRequest("GET", "/oauth2/authorization/other");
                     other.setServletPath("/oauth2/authorization/other");
                     assertThat(resolver.resolve(other)).isNull();
