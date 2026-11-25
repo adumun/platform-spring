@@ -53,21 +53,26 @@ class OidcProtocolTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"valid", "state", "nonce", "issuer", "audience", "expired", "signature", "pkce"})
+    @ValueSource(strings = {"valid", "state", "nonce", "issuer", "audience", "expired", "signature", "pkce", "azp", "missing-azp", "multi-audience", "foreign-session"})
     void callbackValidatesProtocol(String scenario) throws Exception {
         var start = mvc.perform(get("/oauth2/authorization/external"))
                 .andExpect(status().is3xxRedirection()).andReturn();
         var session = (MockHttpSession) start.getRequest().getSession(false);
         var params = parse(URI.create(start.getResponse().getHeader("Location")).getRawQuery());
         var code = UUID.randomUUID().toString();
-        provider.codes.put(code, new Grant(params.get("nonce"), params.get("code_challenge"), scenario));
+        provider.codes.put(code, new Grant(params.get("nonce"), scenario.equals("pkce") ? "tampered-challenge" : params.get("code_challenge"), scenario));
+        var originalSessionId = session.getId();
+        if (scenario.equals("foreign-session")) session = new MockHttpSession();
         var callback = mvc.perform(get("/login/oauth2/code/external").session(session)
                 .param("code", code).param("state", scenario.equals("state") ? "wrong" : params.get("state")))
                 .andExpect(status().is3xxRedirection()).andReturn();
         var authenticated = (SecurityContext) session.getAttribute(
                 HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY);
-        if (scenario.equals("valid")) {
+        if (scenario.equals("valid") || scenario.equals("multi-audience")) {
             assertThat(authenticated).isNotNull();
+            assertThat(session.getId()).isNotEqualTo(originalSessionId);
+            assertThat(Collections.list(session.getAttributeNames()))
+                    .noneMatch(name -> name.contains("AUTHORIZED_CLIENT"));
             assertThat(authenticated.getAuthentication().isAuthenticated()).isTrue();
             assertThat(authenticated.getAuthentication().getName()).isEqualTo("verified-subject");
             assertThat(provider.codes).doesNotContainKey(code);
@@ -110,16 +115,21 @@ class OidcProtocolTest {
                     var verifier = params.getOrDefault("code_verifier", "");
                     var challenge = Base64.getUrlEncoder().withoutPadding().encodeToString(
                             MessageDigest.getInstance("SHA-256").digest(verifier.getBytes(StandardCharsets.US_ASCII)));
-                    if (grant == null || verifier.isBlank() || !challenge.equals(grant.challenge()) || grant.scenario().equals("pkce")) {
+                    if (grant == null || verifier.isBlank() || !challenge.equals(grant.challenge())) {
                         respond(e, 400, "{\"error\":\"invalid_grant\"}"); return;
                     }
                     var now = Instant.now();
-                    var claims = new JWTClaimsSet.Builder().subject("verified-subject")
+                    var builder = new JWTClaimsSet.Builder().subject("verified-subject")
                             .issuer(grant.scenario().equals("issuer") ? issuer + "/wrong" : issuer)
-                            .audience(grant.scenario().equals("audience") ? "wrong-client" : "onboarding")
+                            .audience(grant.scenario().equals("audience") ? List.of("wrong-client") :
+                                    Set.of("azp", "missing-azp", "multi-audience").contains(grant.scenario())
+                                            ? List.of("onboarding", "another-client") : List.of("onboarding"))
                             .issueTime(Date.from(now.minusSeconds(600)))
                             .expirationTime(Date.from(now.plusSeconds(grant.scenario().equals("expired") ? -300 : 300)))
-                            .claim("nonce", grant.scenario().equals("nonce") ? "wrong" : grant.nonce()).build();
+                            .claim("nonce", grant.scenario().equals("nonce") ? "wrong" : grant.nonce());
+                    if (grant.scenario().equals("azp")) builder.claim("azp", "wrong-client");
+                    if (grant.scenario().equals("multi-audience")) builder.claim("azp", "onboarding");
+                    var claims = builder.build();
                     var jwt = new SignedJWT(new JWSHeader.Builder(JWSAlgorithm.RS256).keyID("test-key").build(), claims);
                     jwt.sign(new RSASSASigner(grant.scenario().equals("signature") ? wrongKey : key));
                     respond(e, 200, "{\"access_token\":\"test-access\",\"token_type\":\"Bearer\",\"expires_in\":300,\"id_token\":\"" + jwt.serialize() + "\"}");
