@@ -12,6 +12,11 @@
   <artifactId>adumun-spring-security-oidc-client</artifactId>
   <dependencies>
     <dependency>
+      <groupId>jakarta.servlet</groupId>
+      <artifactId>jakarta.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-security-oauth2-client</artifactId>
     </dependency>
