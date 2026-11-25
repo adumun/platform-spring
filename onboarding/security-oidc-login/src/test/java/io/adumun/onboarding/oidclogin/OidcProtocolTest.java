@@ -63,7 +63,15 @@ class OidcProtocolTest {
         provider.codes.put(code, new Grant(params.get("nonce"), scenario.equals("pkce") ? "tampered-challenge" : params.get("code_challenge"), scenario));
         var originalSessionId = session.getId();
         if (scenario.equals("foreign-session")) session = new MockHttpSession();
+        // Model a browser returning the existing session cookie, including Servlet metadata.
+        var requestedSessionId = session.getId();
         var callback = mvc.perform(get("/login/oauth2/code/external").session(session)
+                .with(request -> {
+                    request.setRequestedSessionId(requestedSessionId);
+                    request.setRequestedSessionIdValid(true);
+                    request.setRequestedSessionIdFromCookie(true);
+                    return request;
+                })
                 .param("code", code).param("state", scenario.equals("state") ? "wrong" : params.get("state")))
                 .andExpect(status().is3xxRedirection()).andReturn();
         var authenticated = (SecurityContext) session.getAttribute(
