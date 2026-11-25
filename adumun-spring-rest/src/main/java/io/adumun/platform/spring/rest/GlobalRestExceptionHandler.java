@@ -1,7 +1,9 @@
 package io.adumun.platform.spring.rest;
 
 import java.util.UUID;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -15,10 +17,22 @@ public final class GlobalRestExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ApiEnvelope<Void>> handleUnexpected(Exception ignored) {
+    ResponseEntity<ApiEnvelope<Void>> handleUnexpected(Exception exception) {
+        if (exception instanceof ErrorResponse errorResponse
+                && errorResponse.getStatusCode().is4xxClientError()) {
+            return handleClientError(errorResponse.getStatusCode());
+        }
+
         RequestContext context = context();
         ApiError error = new ApiError("INTERNAL_ERROR", "INTERNAL", false, "Unexpected server error");
         return ResponseEntity.internalServerError().body(ApiEnvelope.failure(error, context));
+    }
+
+    private ResponseEntity<ApiEnvelope<Void>> handleClientError(HttpStatusCode status) {
+        RequestContext context = context();
+        String code = status.value() == 400 ? "INVALID_REQUEST" : "HTTP_REQUEST_ERROR";
+        ApiError error = new ApiError(code, "CLIENT", false, "Request could not be processed");
+        return ResponseEntity.status(status).body(ApiEnvelope.failure(error, context));
     }
 
     private static RequestContext context() {

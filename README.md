@@ -97,7 +97,7 @@ adumun:
           - orders-api
 ```
 
-The adapter is disabled by default. When enabled, `issuer-uri` is required. Every configured audience must be present in the token `aud` claim. A consumer-provided `JwtDecoder` takes precedence, preserving an escape hatch for specialized providers or custom validation.
+The adapter is disabled by default. When enabled, `issuer-uri` and at least one non-blank `audiences` entry are required. Every configured audience must be present in the token `aud` claim; the configured list is an AND constraint, not an allow-list with any-match semantics. A consumer-provided `JwtDecoder` takes precedence, preserving an escape hatch for specialized providers or custom validation.
 
 Provider-specific adapters such as Firebase and Microsoft Entra should build on this model without introducing provider semantics into `adumun-spring-security`.
 
