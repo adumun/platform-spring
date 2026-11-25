@@ -77,8 +77,10 @@ class OidcProtocolTest {
             assertThat(authenticated.getAuthentication().getName()).isEqualTo("verified-subject");
             var request = callback.getRequest();
             var principal = authenticated.getAuthentication();
-            assertThat(new org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository()
-                    .loadAuthorizedClient("external", principal, request)).isNull();
+            org.springframework.security.oauth2.client.OAuth2AuthorizedClient storedClient =
+                    new org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository()
+                            .loadAuthorizedClient("external", principal, request);
+            assertThat(storedClient).isNull();
             assertThat(provider.codes).doesNotContainKey(code);
             mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                     .post("/oauth2/authorization/external").session(session))
