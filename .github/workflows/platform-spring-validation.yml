@@ -19,6 +19,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+      # Record the effective PR merge SHA, not just the source branch.
       - name: Environment
         run: |
           git rev-parse HEAD
