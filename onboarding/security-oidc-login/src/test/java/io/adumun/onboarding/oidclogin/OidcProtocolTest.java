@@ -75,7 +75,19 @@ class OidcProtocolTest {
                     .noneMatch(name -> name.contains("AUTHORIZED_CLIENT"));
             assertThat(authenticated.getAuthentication().isAuthenticated()).isTrue();
             assertThat(authenticated.getAuthentication().getName()).isEqualTo("verified-subject");
+            var request = callback.getRequest();
+            var principal = authenticated.getAuthentication();
+            assertThat(new org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository()
+                    .loadAuthorizedClient("external", principal, request)).isNull();
             assertThat(provider.codes).doesNotContainKey(code);
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                    .post("/oauth2/authorization/external").session(session))
+                    .andExpect(status().isForbidden());
+            mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                    .post("/logout").session(session))
+                    .andExpect(status().isForbidden());
+            assertThat(session.getAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY))
+                    .isNotNull();
             var replay = mvc.perform(get("/oauth2/authorization/external")).andReturn();
             var fresh = (MockHttpSession) replay.getRequest().getSession(false);
             var freshParams = parse(URI.create(replay.getResponse().getHeader("Location")).getRawQuery());
