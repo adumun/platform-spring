@@ -17,6 +17,7 @@ CASES=(
   rest-minimal
   security-custom-decoder
   security-oidc
+  security-oidc-login
   observability-minimal
   resilience-dependency
   full-stack-service

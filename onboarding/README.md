@@ -12,7 +12,8 @@ They MUST NOT use relative parents, source-directory dependencies, manual import
 |---|---|---|
 | `SPRING-ONB-REST-001` | `rest-minimal` | REST auto-configuration and request/correlation propagation |
 | `SPRING-ONB-SEC-CUSTOM-001` | `security-custom-decoder` | Security core with a consumer-owned `JwtDecoder` and authorization rule |
-| `SPRING-ONB-SEC-OIDC-001` | `security-oidc` | Generic OIDC/JWT adapter configured declaratively |
+| `SPRING-ONB-SEC-OIDC-001` | `security-oidc` | Generic OIDC/JWT Resource Server adapter |
+| `SPRING-ONB-SEC-OIDC-LOGIN-001` | `security-oidc-login` | Confidential OIDC login, PKCE and consumer-owned filters |
 | `SPRING-ONB-OBS-001` | `observability-minimal` | Operational identity and observability auto-configuration |
 | `SPRING-ONB-RES-001` | `resilience-dependency` | Named dependency resilience policy materialization |
 | `SPRING-ONB-FULL-001` | `full-stack-service` | REST + Security/OIDC + Observability + Resilience composition |
@@ -50,6 +51,8 @@ For complete Maven/Spring output:
 ```bash
 make onboarding VERBOSE=1
 ```
+
+The OIDC login case verifies module wiring and authorization redirect. It does **not** yet verify token exchange, callback replay or complete session lifecycle; those are acceptance gates of ADU-181/171.
 
 ## Evolution rule
 
